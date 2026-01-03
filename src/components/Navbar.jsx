@@ -7,7 +7,7 @@ export default function Navbar() {
     padding: "8px 12px",
     borderRadius: "8px",
     fontWeight: 600,
-    background: isActive ? "#111827" : "transparent",
+    background: isActive ? "#63666cff" : "transparent",
     color: isActive ? "#ffffff" : "#111827",
   });
 

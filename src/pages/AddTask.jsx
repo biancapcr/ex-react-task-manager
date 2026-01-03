@@ -1,9 +1,13 @@
-import { useRef, useState } from "react";
+import { useContext, useRef, useState } from "react";
+import { GlobalContext } from "../context/GlobalContext.jsx";
 
 /* costante fornita per la validazione dei simboli vietati */
 const symbols = "!@#$%^&*()-_=+[]{}|;:'\\\",.<>?/`~";
 
 export default function AddTask() {
+  /* recupero della funzione addtask dal contesto globale */
+  const { addTask } = useContext(GlobalContext);
+
   /* stato controllato per il titolo del task */
   const [title, setTitle] = useState("");
 
@@ -17,7 +21,7 @@ export default function AddTask() {
   const statusRef = useRef(null);
 
   function validateTitle(value) {
-    /* rimozione degli spazi ai lati per evitare input vuoti */
+    /* rimozione degli spazi ai lati per evitare input "vuoti" */
     const trimmed = value.trim();
 
     /* validazione: non vuoto */
@@ -36,7 +40,7 @@ export default function AddTask() {
     return "";
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     /* prevenzione del refresh della pagina al submit */
     event.preventDefault();
 
@@ -60,8 +64,23 @@ export default function AddTask() {
       status,
     };
 
-    /* stampa in console dell'oggetto task senza invio all'api */
-    console.log("task da aggiungere:", task);
+    try {
+      /* esecuzione chiamata api tramite funzione del custom hook */
+      await addTask(task);
+
+      /* conferma creazione task */
+      alert("task creata con successo.");
+
+      /* reset del campo controllato */
+      setTitle("");
+
+      /* reset dei campi non controllati */
+      if (descriptionRef.current) descriptionRef.current.value = "";
+      if (statusRef.current) statusRef.current.value = "To do";
+    } catch (error) {
+      /* gestione errore con messaggio ricevuto */
+      alert(error.message);
+    }
   }
 
   return (

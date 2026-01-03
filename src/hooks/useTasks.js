@@ -33,13 +33,43 @@ export function useTasks(apiUrl) {
     fetchTasks();
   }, [apiUrl]);
 
-  /* aggiunta task */
-  function addTask() {}
+  async function addTask(task) {
+    /* validazione minima: presenza delle proprietà richieste */
+    if (!task || !task.title || !task.status) {
+      throw new Error("dati task non validi.");
+    }
 
-  /* rimozione task */
+    /* invio richiesta post per creare un nuovo task */
+    const response = await fetch(`${apiUrl}/tasks`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(task),
+    });
+
+    /* gestione esplicita degli errori http */
+    if (!response.ok) {
+      throw new Error(`errore http: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    /* controllo della struttura prevista dal backend */
+    if (data.success === true) {
+      /* aggiornamento dello stato aggiungendo la task creata */
+      setTasks((prev) => [data.task, ...prev]);
+      return data.task;
+    }
+
+    /* gestione errore applicativo restituito dal backend */
+    throw new Error(data.message || "errore durante la creazione della task.");
+  }
+
+  /* rimozione task: */
   function removeTask() {}
 
-  /* modifica task */
+  /* modifica task: */
   function updateTask() {}
 
   /* esposizione di stato e funzioni per l'utilizzo nei componenti */

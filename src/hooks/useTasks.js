@@ -39,66 +39,92 @@ export function useTasks(apiUrl) {
       throw new Error("dati task non validi.");
     }
 
-    /* invio richiesta post per creare un nuovo task */
     const response = await fetch(`${apiUrl}/tasks`, {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
+      headers: { "content-type": "application/json" },
       body: JSON.stringify(task),
     });
 
-    /* gestione esplicita degli errori http */
     if (!response.ok) {
       throw new Error(`errore http: ${response.status}`);
     }
 
     const data = await response.json();
 
-    /* controllo della struttura prevista dal backend */
     if (data.success === true) {
-      /* aggiornamento dello stato aggiungendo la task creata */
       setTasks((prev) => [data.task, ...prev]);
       return data.task;
     }
 
-    /* gestione errore applicativo restituito dal backend */
     throw new Error(data.message || "errore durante la creazione della task.");
   }
 
   async function removeTask(taskId) {
-    /* controllo presenza id */
     if (taskId === undefined || taskId === null) {
       throw new Error("id task non valido.");
     }
 
-    /* invio richiesta delete per eliminare il task */
     const response = await fetch(`${apiUrl}/tasks/${taskId}`, {
       method: "DELETE",
     });
 
-    /* gestione esplicita degli errori http */
     if (!response.ok) {
       throw new Error(`errore http: ${response.status}`);
     }
 
     const data = await response.json();
 
-    /* controllo della struttura prevista dal backend */
     if (data.success === true) {
-      /* rimozione del task dallo stato globale */
       setTasks((prev) => prev.filter((t) => String(t.id) !== String(taskId)));
       return;
     }
 
-    /* gestione errore applicativo restituito dal backend */
     throw new Error(
       data.message || "errore durante l'eliminazione della task."
     );
   }
 
-  /* modifica task: implementazione nelle milestone successive */
-  function updateTask() {}
+  async function updateTask(updatedTask) {
+    /* validazione minima: presenza id e campi essenziali */
+    if (
+      !updatedTask ||
+      updatedTask.id === undefined ||
+      updatedTask.id === null
+    ) {
+      throw new Error("id task non valido.");
+    }
+    if (!updatedTask.title || !updatedTask.status) {
+      throw new Error("dati task non validi.");
+    }
+
+    /* invio richiesta put per aggiornare il task */
+    const response = await fetch(`${apiUrl}/tasks/${updatedTask.id}`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(updatedTask),
+    });
+
+    /* gestione esplicita degli errori http */
+    if (!response.ok) {
+      throw new Error(`errore http: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    /* controllo della struttura prevista dal backend */
+    if (data.success === true) {
+      /* aggiornamento del task nello stato globale */
+      setTasks((prev) =>
+        prev.map((t) =>
+          String(t.id) === String(updatedTask.id) ? data.task : t
+        )
+      );
+      return data.task;
+    }
+
+    /* gestione errore applicativo restituito dal backend */
+    throw new Error(data.message || "errore durante la modifica della task.");
+  }
 
   /* esposizione di stato e funzioni per l'utilizzo nei componenti */
   return { tasks, addTask, removeTask, updateTask };

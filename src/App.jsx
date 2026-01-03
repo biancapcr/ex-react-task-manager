@@ -3,6 +3,7 @@ import Navbar from "./components/Navbar.jsx";
 import TaskList from "./pages/TaskList.jsx";
 import AddTask from "./pages/AddTask.jsx";
 import { GlobalProvider } from "./context/GlobalContext.jsx";
+import TaskDetail from "./pages/TaskDetail.jsx";
 
 export default function App() {
   return (
@@ -15,14 +16,12 @@ export default function App() {
         {/* contenitore principale delle pagine */}
         <main style={{ padding: "16px" }}>
           <Routes>
-            {/* rotta principale: visualizza la lista dei task */}
             <Route path="/" element={<TaskList />} />
-
-            {/* rotta dedicata all'aggiunta di un nuovo task */}
             <Route path="/add" element={<AddTask />} />
 
-            {/* rotta di fallback per percorsi non validi */}
-            {/* l'utente viene reindirizzato alla home */}
+            {/* rotta dinamica per la pagina dettaglio */}
+            <Route path="/task/:id" element={<TaskDetail />} />
+
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>

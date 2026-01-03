@@ -1,4 +1,4 @@
-import { useContext, useMemo, useState } from "react";
+import { useCallback, useContext, useMemo, useRef, useState } from "react";
 import { GlobalContext } from "../context/GlobalContext.jsx";
 import TaskRow from "../components/TaskRow.jsx";
 
@@ -12,6 +12,12 @@ export default function TaskList() {
   /* stato direzione ordinamento: 1 crescente, -1 decrescente */
   const [sortOrder, setSortOrder] = useState(1);
 
+  /* stato query di ricerca usato per filtrare */
+  const [searchQuery, setSearchQuery] = useState("");
+
+  /* ref per gestire il timeout del debounce */
+  const debounceRef = useRef(null);
+
   function handleSort(column) {
     /* se la colonna è già selezionata, invertire il verso */
     if (sortBy === column) {
@@ -24,9 +30,27 @@ export default function TaskList() {
     setSortOrder(1);
   }
 
-  const sortedTasks = useMemo(() => {
-    /* copia dell'array per evitare mutazioni dello stato */
-    const copy = [...tasks];
+  const debouncedSearch = useCallback((value) => {
+    /* annullamento del timeout precedente se presente */
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    /* ritardo aggiornamento dello stato per ridurre i ricalcoli */
+    debounceRef.current = setTimeout(() => {
+      setSearchQuery(value);
+    }, 300);
+  }, []);
+
+  const visibleTasks = useMemo(() => {
+    /* normalizzazione query per ricerca case insensitive */
+    const q = searchQuery.trim().toLowerCase();
+
+    /* filtraggio per titolo, case insensitive */
+    const filtered =
+      q.length === 0
+        ? [...tasks]
+        : tasks.filter((t) => String(t.title).toLowerCase().includes(q));
 
     /* mappa per l'ordinamento custom dello status */
     const statusRank = {
@@ -35,14 +59,13 @@ export default function TaskList() {
       Done: 2,
     };
 
-    copy.sort((a, b) => {
-      /* ordinamento alfabetico per title */
+    /* ordinamento dei risultati filtrati */
+    filtered.sort((a, b) => {
       if (sortBy === "title") {
         const result = String(a.title).localeCompare(String(b.title));
         return result * sortOrder;
       }
 
-      /* ordinamento per status secondo ordine predefinito */
       if (sortBy === "status") {
         const aRank = statusRank[a.status] ?? 999;
         const bRank = statusRank[b.status] ?? 999;
@@ -50,20 +73,19 @@ export default function TaskList() {
         return result * sortOrder;
       }
 
-      /* ordinamento per createdat tramite confronto numerico */
       const aTime = new Date(a.createdAt).getTime();
       const bTime = new Date(b.createdAt).getTime();
       const result = aTime - bTime;
       return result * sortOrder;
     });
 
-    return copy;
-  }, [tasks, sortBy, sortOrder]);
+    return filtered;
+  }, [tasks, searchQuery, sortBy, sortOrder]);
 
   function getHeaderLabel(column, label) {
     /* aggiunta indicatore visivo per colonna attiva e verso */
     if (sortBy !== column) return label;
-    return `${label} ${sortOrder === 1 ? "▲" : "▼"}`;
+    return `${label} ${sortOrder === 1 ? ">" : "<"}`;
   }
 
   return (
@@ -71,12 +93,33 @@ export default function TaskList() {
       {/* titolo della pagina */}
       <h1 style={{ margin: 0 }}>lista dei task</h1>
 
+      {/* input ricerca non controllato per supportare debounce */}
+      <div style={{ marginTop: "12px", maxWidth: "520px" }}>
+        <label style={{ display: "block", fontWeight: 600 }}>
+          cerca per nome
+        </label>
+        <input
+          type="text"
+          placeholder="scrivere il nome del task..."
+          onChange={(event) => {
+            /* aggiornamento debounced della query senza controllare il value */
+            debouncedSearch(event.target.value);
+          }}
+          style={{
+            width: "100%",
+            padding: "10px",
+            marginTop: "6px",
+            borderRadius: "8px",
+            border: "1px solid #e5e7eb",
+          }}
+        />
+      </div>
+
       {/* tabella task */}
       <div style={{ marginTop: "12px", overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
-              {/* intestazione cliccabile: title */}
               <th
                 onClick={() => handleSort("title")}
                 style={{
@@ -90,7 +133,6 @@ export default function TaskList() {
                 {getHeaderLabel("title", "nome")}
               </th>
 
-              {/* intestazione cliccabile: status */}
               <th
                 onClick={() => handleSort("status")}
                 style={{
@@ -104,7 +146,6 @@ export default function TaskList() {
                 {getHeaderLabel("status", "stato")}
               </th>
 
-              {/* intestazione cliccabile: createdat */}
               <th
                 onClick={() => handleSort("createdAt")}
                 style={{
@@ -121,16 +162,15 @@ export default function TaskList() {
           </thead>
 
           <tbody>
-            {/* gestione caso lista vuota */}
-            {sortedTasks.length === 0 ? (
+            {/* gestione caso lista vuota o nessun risultato */}
+            {visibleTasks.length === 0 ? (
               <tr>
                 <td colSpan={3} style={{ padding: "10px" }}>
-                  nessun task disponibile.
+                  nessun task trovato.
                 </td>
               </tr>
             ) : (
-              /* rendering righe tramite componente dedicato */
-              sortedTasks.map((task) => (
+              visibleTasks.map((task) => (
                 <TaskRow
                   key={task.id}
                   id={task.id}

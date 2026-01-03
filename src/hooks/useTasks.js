@@ -66,10 +66,38 @@ export function useTasks(apiUrl) {
     throw new Error(data.message || "errore durante la creazione della task.");
   }
 
-  /* rimozione task: */
-  function removeTask() {}
+  async function removeTask(taskId) {
+    /* controllo presenza id */
+    if (taskId === undefined || taskId === null) {
+      throw new Error("id task non valido.");
+    }
 
-  /* modifica task: */
+    /* invio richiesta delete per eliminare il task */
+    const response = await fetch(`${apiUrl}/tasks/${taskId}`, {
+      method: "DELETE",
+    });
+
+    /* gestione esplicita degli errori http */
+    if (!response.ok) {
+      throw new Error(`errore http: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    /* controllo della struttura prevista dal backend */
+    if (data.success === true) {
+      /* rimozione del task dallo stato globale */
+      setTasks((prev) => prev.filter((t) => String(t.id) !== String(taskId)));
+      return;
+    }
+
+    /* gestione errore applicativo restituito dal backend */
+    throw new Error(
+      data.message || "errore durante l'eliminazione della task."
+    );
+  }
+
+  /* modifica task: implementazione nelle milestone successive */
   function updateTask() {}
 
   /* esposizione di stato e funzioni per l'utilizzo nei componenti */

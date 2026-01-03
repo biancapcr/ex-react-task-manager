@@ -1,18 +1,37 @@
 import { useContext, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { GlobalContext } from "../context/GlobalContext.jsx";
 
 export default function TaskDetail() {
   /* lettura dell'id dalla rotta dinamica */
   const { id } = useParams();
 
-  /* lettura lista task dal contesto globale */
-  const { tasks } = useContext(GlobalContext);
+  /* navigazione programmatica dopo eliminazione */
+  const navigate = useNavigate();
+
+  /* lettura lista task e funzione remove dal contesto globale */
+  const { tasks, removeTask } = useContext(GlobalContext);
 
   /* ricerca del task corrispondente all'id */
   const task = useMemo(() => {
     return tasks.find((t) => String(t.id) === String(id));
   }, [tasks, id]);
+
+  async function handleDelete() {
+    try {
+      /* esecuzione eliminazione tramite funzione del custom hook */
+      await removeTask(id);
+
+      /* conferma eliminazione */
+      alert("task eliminata con successo.");
+
+      /* reindirizzamento alla lista task */
+      navigate("/");
+    } catch (error) {
+      /* gestione errore con messaggio ricevuto */
+      alert(error.message);
+    }
+  }
 
   if (!task) {
     return (
@@ -47,12 +66,10 @@ export default function TaskDetail() {
           <strong>data di creazione:</strong> {task.createdAt}
         </p>
 
-        {/* bottone elimina (placeholder per milestone successive) */}
+        {/* bottone elimina con chiamata api */}
         <button
           type="button"
-          onClick={() => {
-            console.log("elimino task");
-          }}
+          onClick={handleDelete}
           style={{
             marginTop: "12px",
             padding: "10px 14px",

@@ -1,45 +1,24 @@
-import { createContext, useEffect, useMemo, useState } from "react";
+import { createContext, useMemo } from "react";
+import { useTasks } from "../hooks/useTasks.js";
 
-/* contesto globale per condividere dati e funzioni tra componenti */
+/* contesto globale per la gestione dei task */
 export const GlobalContext = createContext(null);
 
 export function GlobalProvider({ children }) {
-  /* stato globale che memorizza la lista dei task */
-  const [tasks, setTasks] = useState([]);
-
   /* url base dell'api letto dal file .env */
   const apiUrl = import.meta.env.VITE_API_URL;
 
-  useEffect(() => {
-    /* recupero iniziale dei task al caricamento dell'app */
-    async function fetchTasks() {
-      try {
-        const response = await fetch(`${apiUrl}/tasks`);
+  /* utilizzo del custom hook per recuperare task e funzioni */
+  const { tasks, addTask, removeTask, updateTask } = useTasks(apiUrl);
 
-        /* gestione esplicita degli errori http */
-        if (!response.ok) {
-          throw new Error(`errore http: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        /* stampa di debug per verificare i dati ricevuti */
-        console.log("task ricevuti:", data);
-
-        /* salvataggio dei dati nello stato globale */
-        setTasks(data);
-      } catch (error) {
-        /* log di errore utile in fase di sviluppo */
-        console.log("errore fetch tasks:", error);
-      }
-    }
-
-    fetchTasks();
-  }, [apiUrl]);
-
-  /* value memorizzato per evitare re-render inutili dei consumer */
+  /* value memorizzato per evitare re-render inutili */
   const value = useMemo(() => {
-    return { tasks, setTasks };
+    return {
+      tasks,
+      addTask,
+      removeTask,
+      updateTask,
+    };
   }, [tasks]);
 
   return (

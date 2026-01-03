@@ -1,6 +1,7 @@
-import { useContext, useMemo } from "react";
+import { useContext, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { GlobalContext } from "../context/GlobalContext.jsx";
+import Modal from "../components/Modal.jsx";
 
 export default function TaskDetail() {
   /* lettura dell'id dalla rotta dinamica */
@@ -12,15 +13,21 @@ export default function TaskDetail() {
   /* lettura lista task e funzione remove dal contesto globale */
   const { tasks, removeTask } = useContext(GlobalContext);
 
+  /* stato per mostrare o nascondere la modale */
+  const [showModal, setShowModal] = useState(false);
+
   /* ricerca del task corrispondente all'id */
   const task = useMemo(() => {
     return tasks.find((t) => String(t.id) === String(id));
   }, [tasks, id]);
 
-  async function handleDelete() {
+  async function handleConfirmDelete() {
     try {
       /* esecuzione eliminazione tramite funzione del custom hook */
       await removeTask(id);
+
+      /* chiusura modale dopo successo */
+      setShowModal(false);
 
       /* conferma eliminazione */
       alert("task eliminata con successo.");
@@ -28,7 +35,8 @@ export default function TaskDetail() {
       /* reindirizzamento alla lista task */
       navigate("/");
     } catch (error) {
-      /* gestione errore con messaggio ricevuto */
+      /* chiusura modale e gestione errore con messaggio ricevuto */
+      setShowModal(false);
       alert(error.message);
     }
   }
@@ -66,10 +74,10 @@ export default function TaskDetail() {
           <strong>data di creazione:</strong> {task.createdAt}
         </p>
 
-        {/* bottone elimina con chiamata api */}
+        {/* bottone elimina che apre la modale */}
         <button
           type="button"
-          onClick={handleDelete}
+          onClick={() => setShowModal(true)}
           style={{
             marginTop: "12px",
             padding: "10px 14px",
@@ -84,6 +92,18 @@ export default function TaskDetail() {
           elimina task
         </button>
       </div>
+
+      {/* modale di conferma eliminazione */}
+      <Modal
+        title="conferma eliminazione"
+        content={
+          <p style={{ margin: 0 }}>eliminare definitivamente questa task?</p>
+        }
+        show={showModal}
+        onClose={() => setShowModal(false)}
+        onConfirm={handleConfirmDelete}
+        confirmText="conferma"
+      />
     </section>
   );
 }
